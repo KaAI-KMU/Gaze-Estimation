@@ -5,8 +5,8 @@ from PIL import Image
 import numpy as np
 from torchvision import transforms
 
-class EstimationDataset(Dataset):
-    def __init__(self, img_dir, depth_dir, landmark_dir, left_eye_dir, right_eye_dir, label_dir, transform=None):
+class EstimationFileDataset(Dataset):
+    def __init__(self, img_dir, depth_dir, landmark_dir, left_eye_dir, right_eye_dir, label_dir, face_transform=None, eye_transform=None):
         self.img_dir = img_dir
         self.depth_dir = depth_dir
         self.landmark_dir = landmark_dir
@@ -14,9 +14,14 @@ class EstimationDataset(Dataset):
         self.right_eye_dir = right_eye_dir
         self.label_dir = label_dir
 
-        self._transform = transform
-        if self._transform is None:
-            self.transform = transforms.Compose([transforms.Resize((224,224), Image.BICUBIC),
+        self._face_transform = face_transform
+        self._eye_transform = eye_transform
+        if self._face_transform is None:
+            self._face_transform = transforms.Compose([transforms.Resize((256,256), Image.BICUBIC),
+                                                 transforms.ToTensor(),
+                                                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        if self._eye_transform is None:
+            self._eye_transform = transforms.Compose([transforms.Resize((64,64), Image.BICUBIC),
                                                  transforms.ToTensor(),
                                                  transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
@@ -65,7 +70,7 @@ class EstimationDataset(Dataset):
         }
 
 # create dataset and dataloader objects
-dataset = EstimationDataset(
+dataset = EstimationFileDataset(
     img_dir='path/to/image/directory',
     depth_dir='path/to/depth/directory',
     landmark_dir='path/to/landmark/directory',
@@ -74,4 +79,3 @@ dataset = EstimationDataset(
     label_dir='path/to/label/directory'
 )
 dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-# test

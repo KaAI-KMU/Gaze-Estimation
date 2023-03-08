@@ -1,8 +1,8 @@
-import os
-import numpy as np
 import torch
-from PIL import ImageFilter
-from torch.utils.data import DataLoader
-from torchvision.transforms import transforms
+import torch.nn as nn
+import torch.nn.functional as F
+from torchvision import models
 
-from dataloader import EstimationDataset
+class GazeEstimationModel(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
