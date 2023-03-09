@@ -37,8 +37,29 @@ class GazeEstimationModel_fc(nn.Module):
         return x_l, x_r, concat, fc
 
     def forward(self, left_eye, right_eye, head_pose):
-        left_x = self.left_feature()
-        return left_x
+        left_x = self.left_feature(left_eye)
+        left_x = nn.Flatten(left_x, 1)
+        left_x = self.xl(left_x)
+
+        right_x = self.right_feature(right_eye)
+        right_x = nn.Flatten(right_x, 1)
+        right_x = self.xr(right_x)
+
+        eyes_x = torch.cat((left_x, right_x), dim=1)
+        eyes_x = self.concat(eyes_x)
+
+        eyes_headpose = torch.cat((eyes_x, head_pose), dim=1)
+
+        fc_output = self.fc(eyes_headpose)
+        return fc_output
+    
+    @staticmethod
+    def _init_weights(modules):
+        for md in modules:
+            if isinstance(md, nn.Linear):
+                nn.init.kaiming_uniform_(md.weight, mode="fan_in", nonlinearity="relu")
+                nn.init.zeros_(md.bias)
+
     
 class GazeEstimationModel_vgg16(GazeEstimationModel_fc):
     """Some Information about GazeEstimationModel_vgg16"""
@@ -55,9 +76,14 @@ class GazeEstimationModel_vgg16(GazeEstimationModel_fc):
         _right_modules.append(_right_eye_model.avgpool)
         self.right_feature = nn.Sequential(*_right_modules)
 
-    def forward(self, x):
+        for param in self.left_features.parameters():
+            param.requires_grad = True
+        for param in self.right_features.parameters():
+            param.requires_grad = True
 
-        return x
+        self.xl, self.xr, self.concat, self.fc = GazeEstimationModel_fc._fc_layers(in_features=_left_eye_model.classifier[0].in_features,
+                                                                                   out_features=num_out)
+        GazeEstimationModel_fc._init_weights(self.modules())
     
 class GazeEstiamationModel_resent18(GazeEstimationModel_fc):
     """Some Information about GazeEstiamationModel_resent18"""
@@ -90,6 +116,11 @@ class GazeEstiamationModel_resent18(GazeEstimationModel_fc):
             _right_eye_model.avgpool
         )
 
-    def forward(self, x):
+        for param in self.left_features.parameters():
+            param.requires_grad = True
+        for param in self.right_features.parameters():
+            param.requires_grad = True
 
-        return x
+        self.xl, self.xr, self.concat, self.fc = GazeEstimationModel_fc._fc_layers(in_features=_left_eye_model.fc.in_features,
+                                                                                   out_features=num_out)
+        GazeEstimationModel_fc._init_weights(self.modules())
