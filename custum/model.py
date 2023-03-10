@@ -124,3 +124,122 @@ class GazeEstiamationModel_resent18(GazeEstimationModel_fc):
         self.xl, self.xr, self.concat, self.fc = GazeEstimationModel_fc._fc_layers(in_features=_left_eye_model.fc.in_features,
                                                                                    out_features=num_out)
         GazeEstimationModel_fc._init_weights(self.modules())
+
+class GazeEstimationPreactResnet(GazeEstimationModel_fc):
+    """Some Information about GazeEstimationPreactResnet"""
+    class PreactResnet(nn.Module):
+        """Some Information about PreactResnet"""
+        class BasicBlock(nn.Module):
+            """Some Information about BasicBlock"""
+            def __init__(self, in_channels, out_channels, stride):
+                super().__init__()
+
+                self.bn1 = nn.BatchNorm2d(in_channels)
+                self.conv1 = nn.Conv2d(in_channels,
+                                       out_channels,
+                                       kernel_size=3,
+                                       stride=stride,
+                                       padding=1,
+                                       bias=False)
+                self.bn2 = nn.BatchNorm2d(out_channels)
+                self.conv2 = nn.Conv2d(out_channels,
+                                       out_channels,
+                                       kernel_size=3,
+                                       stride=1,
+                                       padding=1,
+                                       bias=False)
+                self.shortcut = nn.Sequential()
+                if in_channels != out_channels:
+                    self.shortcut.add_module(
+                        'conv',
+                        nn.Conv2d(in_channels,
+                                  out_channels,
+                                  kernel_size=1,
+                                  stride=stride,
+                                  padding=0,
+                                  bias=False)
+                    )
+        
+            def forward(self, x):
+                x = F.relu(self.bn1(x), inplace=True)
+                y = self.conv1(x)
+                y = F.relu(self.bn2(y), inplace=True)
+                y = self.conv2(y)
+                y += self.shortcut(x)
+                return y
+            
+        def __init__(self, depth=30, base_channels=16, input_shape=(1, 3, 224, 224)):
+            super().__init__()
+
+            n_blocks_per_stage = (depth - 2) // 6
+            n_channels = [base_channels, base_channels * 2, base_channels * 4]
+
+            self.conv = nn.Conv2d(input_shape[1],
+                                  n_channels[0],
+                                  kernel_size=(3, 3),
+                                  stride=1,
+                                  padding=1,
+                                  bias=False)
+
+            self.stage1 = self._make_stage(n_channels[0],
+                                           n_channels[0],
+                                           n_blocks_per_stage,
+                                           GazeEstimationPreactResnet.PreactResnet.BasicBlock,
+                                           stride=1)
+            self.stage2 = self._make_stage(n_channels[0],
+                                           n_channels[1],
+                                           n_blocks_per_stage,
+                                           GazeEstimationPreactResnet.PreactResnet.BasicBlock,
+                                           stride=2)
+            self.stage3 = self._make_stage(n_channels[1],
+                                           n_channels[2],
+                                           n_blocks_per_stage,
+                                           GazeEstimationPreactResnet.PreactResnet.BasicBlock,
+                                           stride=2)
+            self.bn = nn.BatchNorm2d(n_channels[2])
+
+            self._init_weights(self.modules())
+
+        @staticmethod
+        def _init_weights(module):
+            if isinstance(module, nn.Conv2d):
+                nn.init.kaiming_normal_(module.weight, mode='fan_out')
+            elif isinstance(module, nn.BatchNorm2d):
+                nn.init.ones_(module.weight)
+                nn.init.zeros_(module.bias)
+            elif isinstance(module, nn.Linear):
+                nn.init.zeros_(module.bias)
+        
+        @staticmethod
+        def _make_stage(in_channels, out_channels, n_blocks, block, stride):
+            stage = nn.Sequential()
+            for index in range(n_blocks):
+                block_name = "block{}".format(index + 1)
+                if index == 0:
+                    stage.add_module(block_name, block(in_channels, out_channels, stride=stride))
+                else:
+                    stage.add_module(block_name, block(out_channels, out_channels, stride=1))
+            return stage
+
+        def forward(self, x):
+            x = self.conv(x)
+            x = self.stage1(x)
+            x = self.stage2(x)
+            x = self.stage3(x)
+            x = F.relu(self.bn(x), inplace=True)
+            x = F.adaptive_avg_pool2d(x, output_size=1)
+            return x
+
+    def __init__(self, num_out=2):
+        super(GazeEstimationPreactResnet, self).__init__()
+
+        self.left_features = GazeEstimationPreactResnet.PreactResnet()
+        self.right_features = GazeEstimationPreactResnet.PreactResnet()
+
+        for param in self.left_features.parameters():
+            param.requires_grad = True
+        for param in self.right_features.parameters():
+            param.requires_grad = True
+
+        self.xl, self.xr, self.concat, self.fc = GazeEstimationModel_fc._create_fc_layers(in_features=64, out_features=num_out)
+        GazeEstimationModel_fc._init_weights(self.modules())
