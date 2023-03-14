@@ -119,16 +119,32 @@ class TrainEstimationModel(pl.LightningModule):
                           num_workers=self.hparams.num_io_workers, pin_memory=False)
 
     def val_dataloader(self):
-        _data_validate = EstimationFileDataset(h5_file=h5py.File(self.hparams.hdf5_file, mode="r"),
-                                         subject_list=self._validate_subjects)
-        return DataLoader(_data_validate, batch_size=self.hparams.batch_size, shuffle=False,
-                          num_workers=self.hparams.num_io_workers, pin_memory=False)
+        # create dataset and dataloader objects
+        dataset = EstimationFileDataset(
+            img_dir='path/to/image/directory',
+            depth_dir='path/to/depth/directory',
+            landmark_dir='path/to/landmark/directory',
+            left_eye_dir='path/to/left/eye/directory',
+            right_eye_dir='path/to/right/eye/directory',
+            label_dir='path/to/label/directory'
+        )
+        dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+        # _data_validate = EstimationFileDataset(h5_file=h5py.File(self.hparams.hdf5_file, mode="r"),
+        #                                  subject_list=self._validate_subjects)
+        return dataloader
 
     def test_dataloader(self):
-        _data_test = EstimationFileDataset(h5_file=h5py.File(self.hparams.hdf5_file, mode="r"),
-                                     subject_list=self._test_subjects)
-        return DataLoader(_data_test, batch_size=self.hparams.batch_size, shuffle=False,
-                          num_workers=self.hparams.num_io_workers, pin_memory=False)
+        # create dataset and dataloader objects
+        dataset = EstimationFileDataset(
+            img_dir='path/to/image/directory',
+            depth_dir='path/to/depth/directory',
+            landmark_dir='path/to/landmark/directory',
+            left_eye_dir='path/to/left/eye/directory',
+            right_eye_dir='path/to/right/eye/directory',
+            label_dir='path/to/label/directory'
+        )
+        dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+        return dataloader
 
 if __name__ == "__main__":
     from pytorch_lightning import Trainer

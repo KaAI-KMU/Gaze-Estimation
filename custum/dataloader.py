@@ -68,14 +68,3 @@ class EstimationFileDataset(Dataset):
             'right_eye': right_eye,
             'label': label
         }
-
-# create dataset and dataloader objects
-dataset = EstimationFileDataset(
-    img_dir='path/to/image/directory',
-    depth_dir='path/to/depth/directory',
-    landmark_dir='path/to/landmark/directory',
-    left_eye_dir='path/to/left/eye/directory',
-    right_eye_dir='path/to/right/eye/directory',
-    label_dir='path/to/label/directory'
-)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)

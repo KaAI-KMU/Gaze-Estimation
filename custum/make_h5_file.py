@@ -2,8 +2,6 @@ import h5py
 import numpy as np
 import os
 from PIL import Image
-import datetime
-import fnmatch
 
 orginal_dir = "custum/img_data/rgb_img/color_img"
 img_dir="custum/img_data/rgb_img/faces"
@@ -35,6 +33,7 @@ for i in file_list:
     h5_file.create_dataset('KaAI/{}/face_color/{}.jpg'.format(i,i), data=rgb_img)
     
     depth_img = Image.open('{}/{}_face_depth.jpg'.format(depth_dir,i))
+    depth_img = np.asarray(depth_img)
     h5_file.create_dataset('KaAI/{}/face_depth/{}.jpg'.format(i,i), data=depth_img)
 
     left_eye_img = Image.open('{}/{}_leye.jpg'.format(left_eye_dir,i))

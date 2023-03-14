@@ -2,12 +2,12 @@ import dlib
 import cv2
 import os
 
-path = "custum/img_data/rgb_img/"
-depth_path = "custum/img_data/depth_img/"
+path = "custum/img_data/rgb_img/color_img"
+depth_path = "custum/img_data/rgb_img/depth_img"
+save_path = "custum/img_data/rgb_img"
 
 file_list = os.listdir(path)
 file_list_jpg = [file for file in file_list if file.endswith(".jpg")]#.png
-print(file_list_jpg)
 count = 1
 
 # Load the facial landmark predictor from dlib
@@ -17,11 +17,11 @@ predictor = dlib.shape_predictor('custum/shape_predictor_68_face_landmarks.dat')
 detector = dlib.get_frontal_face_detector()
 
 # Create separate folders to save the face and eyes
-face_folder = '{}/faces/'.format(path)
-face_depth_folder = '{}/faces_depth/'.format(path)
-leye_folder = '{}/left_eyes/'.format(path)
-reye_folder = '{}/right_eyes/'.format(path)
-facial_landmark_folder = '{}/facial_landmark/'.format(path)
+face_folder = '{}/faces/'.format(save_path)
+face_depth_folder = '{}/faces_depth/'.format(save_path)
+leye_folder = '{}/left_eyes/'.format(save_path)
+reye_folder = '{}/right_eyes/'.format(save_path)
+facial_landmark_folder = '{}/facial_landmark/'.format(save_path)
 
 if not os.path.exists(face_folder):
     os.makedirs(face_folder)
@@ -39,7 +39,7 @@ for file_name in file_list_jpg:
     # Load the image
     #img = cv2.imread('custum/img_data/{}'.format(file_name))#rt-gene_test/
     img = cv2.imread('{}/{}'.format(path,file_name))
-    img_depth = cv2.imread('{}/{}'.format(depth_path,file_name))
+    img_depth = cv2.imread('{}/{}'.format(depth_path,file_name), cv2.IMREAD_UNCHANGED)
 
     # Convert the image to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -49,7 +49,7 @@ for file_name in file_list_jpg:
 
     if len(faces) == 0:
         # Save the file directory to txt file if no face is detected
-        with open('{}/facial_landmark/no_face_detected.txt'.format(path), 'a') as f:
+        with open('{}/facial_landmark/no_face_detected.txt'.format(save_path), 'a') as f:
             f.write(file_name+'\n')
         # os.remove('{}/{}'.format(path,file_name))
         # os.remove('{}/{}'.format(depth_path,file_name))
@@ -87,7 +87,7 @@ for file_name in file_list_jpg:
             reye_file = os.path.join(reye_folder, os.path.splitext(file_name)[0] + '_reye.jpg')
             cv2.imwrite(reye_file, img[right_eye[1]:right_eye[3], right_eye[0]:right_eye[2]])
 
-            with open('{}/facial_landmark/{}.txt'.format(path,file_name[:-4]), 'w') as f:
+            with open('{}/facial_landmark/{}.txt'.format(save_path,file_name[:-4]), 'w') as f:
                 for i in range(68):
                     x = landmarks.part(i).x
                     y = landmarks.part(i).y
